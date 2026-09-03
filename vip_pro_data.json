@@ -1,0 +1,46 @@
+{
+  "users": {
+    "hungdzkk11": {
+      "user_id": "hungdzkk11",
+      "username": "hungdzkk11",
+      "password": "51b151f00525515eb5f5e74e3505525e7666c713646c902468c451ff878d1091",
+      "full_name": "Administrator",
+      "created_at": "2026-09-02T07:23:17.816904",
+      "balance": 999699999,
+      "current_key": 1,
+      "keys_history": [
+        {
+          "key_id": 1,
+          "key_value": "XDMJXV",
+          "activated_at": "2026-09-02T07:23:28.777255",
+          "expires_at": "2054-01-17T07:23:28.770787",
+          "package_type": "buy_forever",
+          "price": 300000
+        }
+      ],
+      "is_admin": true
+    }
+  },
+  "keys": {
+    "1": {
+      "key_id": 1,
+      "key_value": "XDMJXV",
+      "package_type": "buy_forever",
+      "package_name": "Vĩnh Viễn (Update liên tục)",
+      "price": 300000,
+      "created_at": "2026-09-02T07:23:28.772616",
+      "expires_at": "2054-01-17T07:23:28.770787",
+      "user_id": "hungdzkk11",
+      "is_active": true,
+      "activated_at": "2026-09-02T07:23:28.777228",
+      "device_limit": 1,
+      "devices_used": []
+    }
+  },
+  "deposits": {},
+  "settings": {
+    "last_user_id": 1,
+    "last_key_id": 1,
+    "last_deposit_id": 0
+  }
+}
