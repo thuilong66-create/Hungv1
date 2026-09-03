@@ -1390,7 +1390,242 @@ class BCRPatterns:
         conf=min(90,58+abs(signals['P']-signals['B'])/total*35)
         return {'id':'vip_baocao','ten':'VIP Bao cao tong hop','do_tin_cay':round(conf,1),'ket_tiep':pred,'trong_so':90,'uu_tien':50,'la_vip':True,'la_ai':True}
 
-    # ─── DETECT ALL (CẬP NHẬT VỚI VIP PRO) ───
+    # ═══════════════════════════════════════════════════════════
+    # CẦU PHỔ BIẾN BACCARAT — Nâng cấp VIP PRO
+    # Các cầu phổ biến nhất trong Baccarat thực tế
+    # ═══════════════════════════════════════════════════════════
+
+    @staticmethod
+    def cau_rong_P(h):
+        """Cầu Rồng Player: P liên tục dài"""
+        pb=[c for c in h if c in ('P','B')]
+        if len(pb)<4: return None
+        run=0
+        for c in reversed(pb):
+            if c=='P': run+=1
+            else: break
+        if run>=7: return {'id':'rong_p','ten':f'Cau Rong P ({run}) -> BE','do_tin_cay':92,'ket_tiep':'B','trong_so':90,'uu_tien':run*3,'la_vip':True}
+        if run>=5: return {'id':'rong_p','ten':f'Cau Rong P ({run})','do_tin_cay':82,'ket_tiep':'P','trong_so':78,'uu_tien':run*2}
+        if run>=3: return {'id':'rong_p','ten':f'Cau P lien ({run})','do_tin_cay':70,'ket_tiep':'P','trong_so':66,'uu_tien':run}
+        return None
+
+    @staticmethod
+    def cau_rong_B(h):
+        """Cầu Rồng Banker: B liên tục dài"""
+        pb=[c for c in h if c in ('P','B')]
+        if len(pb)<4: return None
+        run=0
+        for c in reversed(pb):
+            if c=='B': run+=1
+            else: break
+        if run>=7: return {'id':'rong_b','ten':f'Cau Rong B ({run}) -> BE','do_tin_cay':92,'ket_tiep':'P','trong_so':90,'uu_tien':run*3,'la_vip':True}
+        if run>=5: return {'id':'rong_b','ten':f'Cau Rong B ({run})','do_tin_cay':82,'ket_tiep':'B','trong_so':78,'uu_tien':run*2}
+        if run>=3: return {'id':'rong_b','ten':f'Cau B lien ({run})','do_tin_cay':70,'ket_tiep':'B','trong_so':66,'uu_tien':run}
+        return None
+
+    @staticmethod
+    def cau_mat_bead(h):
+        """Cầu Mắt (Big Eye Boy): So sánh cột hiện tại với cột trước"""
+        pb=[c for c in h if c in ('P','B')]
+        if len(pb)<6: return None
+        # Chia thành các cột (runs)
+        runs=[]; cur=pb[0]; rl=1
+        for i in range(1,len(pb)):
+            if pb[i]==cur: rl+=1
+            else: runs.append((cur,rl)); cur=pb[i]; rl=1
+        runs.append((cur,rl))
+        if len(runs)<3: return None
+        # So sánh cột cuối vs cột trước
+        last_run=runs[-1]; prev_run=runs[-2]
+        if last_run[1]==prev_run[1]:
+            # Cùng độ dài → "đỏ" → cầu theo (tiếp tục cùng loại)
+            return {'id':'mat_bead','ten':'Cau Mat (cung do dai) -> THEO','do_tin_cay':76,'ket_tiep':last_run[0],'trong_so':74,'uu_tien':20}
+        else:
+            # Khác độ dài → "xanh" → cầu đảo
+            opp='P' if last_run[0]=='B' else 'B'
+            return {'id':'mat_bead','ten':'Cau Mat (khac do dai) -> DAO','do_tin_cay':74,'ket_tiep':opp,'trong_so':72,'uu_tien':18}
+
+    @staticmethod
+    def cau_gian_doan(h):
+        """Cầu Gián đoạn (Cockroach Road): So sánh với 2 cột trước"""
+        pb=[c for c in h if c in ('P','B')]
+        if len(pb)<8: return None
+        runs=[]; cur=pb[0]; rl=1
+        for i in range(1,len(pb)):
+            if pb[i]==cur: rl+=1
+            else: runs.append((cur,rl)); cur=pb[i]; rl=1
+        runs.append((cur,rl))
+        if len(runs)<4: return None
+        last=runs[-1]; two_back=runs[-3]
+        if last[1]==two_back[1]:
+            return {'id':'gian_doan','ten':'Cau Gian doan -> THEO','do_tin_cay':75,'ket_tiep':last[0],'trong_so':72,'uu_tien':18}
+        else:
+            opp='P' if last[0]=='B' else 'B'
+            return {'id':'gian_doan','ten':'Cau Gian doan -> DAO','do_tin_cay':73,'ket_tiep':opp,'trong_so':70,'uu_tien':16}
+
+    @staticmethod
+    def cau_nhay_co(h):
+        """Cầu Nhảy Cóc: P-B xen kẽ liên tục nhiều phiên"""
+        pb=[c for c in h if c in ('P','B')]
+        if len(pb)<6: return None
+        alt=0
+        for i in range(len(pb)-1,max(len(pb)-8,0),-1):
+            if pb[i]!=pb[i-1]: alt+=1
+            else: break
+        if alt>=6:
+            return {'id':'nhay_co','ten':f'Cau Nhay Co ({alt}) -> TIEP','do_tin_cay':88,'ket_tiep':'P' if pb[-1]=='B' else 'B','trong_so':86,'uu_tien':alt*2,'la_vip':True}
+        if alt>=4:
+            return {'id':'nhay_co','ten':f'Cau Nhay Co ({alt})','do_tin_cay':80,'ket_tiep':'P' if pb[-1]=='B' else 'B','trong_so':78,'uu_tien':alt}
+        return None
+
+    @staticmethod
+    def cau_xuyen(h):
+        """Cầu Xuyên: Một bên thắng áp đảo rồi đột ngột đổi chiều"""
+        pb=[c for c in h if c in ('P','B')]
+        if len(pb)<10: return None
+        r10=pb[-10:]; r3=pb[-3:]
+        p10=r10.count('P'); b10=r10.count('B')
+        p3=r3.count('P'); b3=r3.count('B')
+        # P áp đảo 10 phiên nhưng 3 phiên gần đây B lấy lại
+        if p10>=7 and b3>=2:
+            return {'id':'xuyen','ten':'Cau Xuyen (P->B)','do_tin_cay':82,'ket_tiep':'B','trong_so':80,'uu_tien':25,'la_vip':True}
+        if b10>=7 and p3>=2:
+            return {'id':'xuyen','ten':'Cau Xuyen (B->P)','do_tin_cay':82,'ket_tiep':'P','trong_so':80,'uu_tien':25,'la_vip':True}
+        return None
+
+    @staticmethod
+    def cau_doi_ben(h):
+        """Cầu Đôi Bên: Cân bằng P/B → dự đoán theo bên vừa thắng"""
+        pb=[c for c in h if c in ('P','B')]
+        if len(pb)<12: return None
+        r12=pb[-12:]
+        p=r12.count('P'); b=r12.count('B')
+        if abs(p-b)<=2:  # Rất cân bằng
+            last=pb[-1]
+            return {'id':'doi_ben','ten':'Cau Doi Ben (can bang)','do_tin_cay':72,'ket_tiep':last,'trong_so':68,'uu_tien':14}
+        return None
+
+    @staticmethod
+    def cau_3_3_repeat(h):
+        """Cầu 3-3 lặp: PPP BBB PPP BBB pattern"""
+        pb=[c for c in h if c in ('P','B')]
+        if len(pb)<9: return None
+        l9=''.join(pb[-9:])
+        if l9 in ('PPPBBBPPP','BBBPPPBBB'):
+            opp='B' if l9[-1]=='P' else 'P'
+            return {'id':'cau33r','ten':'Cau 3-3 lap','do_tin_cay':86,'ket_tiep':opp,'trong_so':84,'uu_tien':22,'la_vip':True}
+        l6=''.join(pb[-6:])
+        if l6 in ('PPPBBB','BBBPPP'):
+            return {'id':'cau33r','ten':'Cau 3-3','do_tin_cay':78,'ket_tiep':'P' if l6[-1]=='B' else 'B','trong_so':76,'uu_tien':14}
+        return None
+
+    @staticmethod
+    def cau_tang_dan(h):
+        """Cầu Tăng Dần: Chuỗi 1-2-3 hoặc 3-2-1"""
+        pb=[c for c in h if c in ('P','B')]
+        if len(pb)<6: return None
+        runs=[]; cur=pb[0]; rl=1
+        for i in range(1,len(pb)):
+            if pb[i]==cur: rl+=1
+            else: runs.append(rl); cur=pb[i]; rl=1
+        runs.append(rl)
+        if len(runs)>=3:
+            last3=runs[-3:]
+            if last3[0]<last3[1]<last3[2]:  # 1,2,3 tăng dần
+                return {'id':'tang_dan','ten':'Cau Tang Dan','do_tin_cay':78,'ket_tiep':pb[-1],'trong_so':76,'uu_tien':18}
+            if last3[0]>last3[1]>last3[2]:  # 3,2,1 giảm dần
+                opp='P' if pb[-1]=='B' else 'B'
+                return {'id':'tang_dan','ten':'Cau Giam Dan','do_tin_cay':76,'ket_tiep':opp,'trong_so':74,'uu_tien':16}
+        return None
+
+    @staticmethod
+    def cau_ping_pong(h):
+        """Cầu Ping Pong: PPBB PPBB lặp lại"""
+        pb=[c for c in h if c in ('P','B')]
+        if len(pb)<8: return None
+        l8=''.join(pb[-8:])
+        if l8 in ('PPBBPPBB','BBPPBBPP'):
+            opp='P' if pb[-1]=='B' else 'B'
+            return {'id':'ping_pong','ten':'Cau Ping Pong','do_tin_cay':85,'ket_tiep':opp,'trong_so':82,'uu_tien':22,'la_vip':True}
+        l4=''.join(pb[-4:])
+        if l4 in ('PPBB','BBPP'):
+            return {'id':'ping_pong','ten':'Cau Ping Pong (4)','do_tin_cay':76,'ket_tiep':'P' if l4=='PPBB' else 'B','trong_so':74,'uu_tien':12}
+        return None
+
+    @staticmethod
+    def du_doan_sieu_chuan(h):
+        """DỰ ĐOÁN SIÊU CHUẨN: Tổng hợp tất cả tín hiệu với trọng số thông minh"""
+        pb=[c for c in h if c in ('P','B')]
+        if len(pb)<8: return None
+        sp=sb=0.0; sig=0
+        last=pb[-1]
+        # 1. Chuỗi hiện tại (trọng số cao nhất)
+        run=1
+        for i in range(len(pb)-2,-1,-1):
+            if pb[i]==last: run+=1
+            else: break
+        if run>=6: w=run*4; (sb if last=='P' else sp).__class__  # break predict
+        if run>=6:
+            if last=='P': sb+=run*4
+            else: sp+=run*4
+            sig+=2
+        elif run>=3:
+            if last=='P': sp+=run*2.5
+            else: sb+=run*2.5
+            sig+=1
+        elif run==1:
+            if last=='P': sp+=3
+            else: sb+=3
+            sig+=1
+        # 2. Multi-window phân bố (5/10/15/20)
+        for w,wt in [(5,4),(10,3),(15,2),(20,1.5)]:
+            if len(pb)>=w:
+                seg=pb[-w:]; pc=seg.count('P'); bc=seg.count('B')
+                if pc+bc>0:
+                    ratio=pc/(pc+bc)
+                    if ratio>=0.7: sb+=8*wt; sig+=1
+                    elif ratio<=0.3: sp+=8*wt; sig+=1
+                    elif ratio>=0.6: sb+=4*wt; sig+=1
+                    elif ratio<=0.4: sp+=4*wt; sig+=1
+        # 3. Momentum (5 gần vs 10 xa)
+        if len(pb)>=15:
+            r5=pb[-5:]; r10=pb[-15:-5]
+            m=r5.count('B')/5 - r10.count('B')/10
+            if m>0.25: sb+=15; sig+=1
+            elif m<-0.25: sp+=15; sig+=1
+        # 4. Run length trend
+        runs=[]; cur=pb[0]; rl=1
+        for i in range(1,len(pb)):
+            if pb[i]==cur: rl+=1
+            else: runs.append((cur,rl)); cur=pb[i]; rl=1
+        runs.append((cur,rl))
+        if len(runs)>=3:
+            lens=[r[1] for r in runs[-4:]]
+            if len(lens)>=3:
+                if lens[-1]>lens[-2]: sp+=6 if runs[-1][0]=='P' else 0; sb+=6 if runs[-1][0]=='B' else 0; sig+=1
+                elif lens[-1]<lens[-2]: opp='B' if runs[-1][0]=='P' else 'P'; (sb if opp=='B' else sp).__class__; sig+=1
+                if lens[-1]<lens[-2]:
+                    if runs[-1][0]=='P': sb+=5
+                    else: sp+=5
+        # 5. Alternation rate
+        if len(pb)>=6:
+            alt_count=sum(1 for i in range(max(0,len(pb)-6),len(pb)-1) if pb[i]!=pb[i+1])
+            if alt_count>=4:
+                if last=='P': sb+=8
+                else: sp+=8
+                sig+=1
+        # 6. Banker edge
+        sb+=3
+        # Final
+        if sig<2: return None
+        total=sp+sb
+        if total==0: return None
+        pred='P' if sp>sb else 'B'
+        ratio=max(sp,sb)/total
+        conf=min(96,max(65,55+ratio*42+sig*2))
+        return {'id':'sieu_chuan','ten':'DU DOAN SIEU CHUAN','do_tin_cay':round(conf,1),'ket_tiep':pred,'trong_so':98,'uu_tien':70,'la_vip':True,'la_ai':True}
+
+    # ─── DETECT ALL (NÂNG CẤP FULL VIP PRO) ───
     @staticmethod
     def detect_all(h):
         results=[]
@@ -1418,10 +1653,17 @@ class BCRPatterns:
             BCRPatterns.bcr_pro_mc, BCRPatterns.bcr_gemini_local,
             BCRPatterns.bcr_vo_han, BCRPatterns.bcr_nguyen_to_an,
             BCRPatterns.bcr_pbpb_pattern,
-            # 6 VIP PRO (từ code_02092026.py)
+            # 6 VIP PRO
             BCRPatterns.vip_thong_ke_cau, BCRPatterns.vip_du_doan_ket_hop,
             BCRPatterns.vip_kelly_signal, BCRPatterns.vip_rui_ro,
             BCRPatterns.vip_mo_phong, BCRPatterns.vip_bao_cao,
+            # CẦU PHỔ BIẾN + DỰ ĐOÁN SIÊU CHUẨN
+            BCRPatterns.cau_rong_P, BCRPatterns.cau_rong_B,
+            BCRPatterns.cau_mat_bead, BCRPatterns.cau_gian_doan,
+            BCRPatterns.cau_nhay_co, BCRPatterns.cau_xuyen,
+            BCRPatterns.cau_doi_ben, BCRPatterns.cau_3_3_repeat,
+            BCRPatterns.cau_tang_dan, BCRPatterns.cau_ping_pong,
+            BCRPatterns.du_doan_sieu_chuan,
         ]
         for m in methods:
             try:
